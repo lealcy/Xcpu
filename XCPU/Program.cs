@@ -6,10 +6,6 @@ using System.Threading.Tasks;
 
 namespace XCPU
 {
-    struct CPU {
-        int r0;
-        int pc;
-    };
 
     class Program
     {
@@ -17,22 +13,38 @@ namespace XCPU
         {
             Xcpu cpu = new Xcpu();
             string cmd;
+            Console.WriteLine("Commands starts with '/'.");
             while (true) {
-                Console.Write(">> ");
+                Console.Write("{0,5:D5}: ", cpu.pc);
                 cmd = Console.ReadLine();
-                switch (cmd.Trim().ToLower()) {
-                    case "exit":
-                        return;
-                        break;
-                    case "run":
-                        cpu.Run();
-                        break;
-                    default:
-                        cpu.ParseLine(cmd);
-                        break;
+                string command = cmd.Split(' ')[0].Trim().ToLower();
+                if (command.StartsWith("/")) {
+                    switch (command) {
+                        case "/exit":
+                            return;
+                        case "/run":
+                            cpu.Run();
+                            break;
+                        case "/reset":
+                            cpu.pc = 0;
+                            break;
+                        case "/jump":
+                            string param = cmd.Substring(6).Trim();
+                            if (!int.TryParse(param, out cpu.pc)) {
+                                Console.WriteLine("Expected memory address.");
+                            }
+                            break;
+                        case "/state":
+                            cpu.PrintState();
+                            break;
+                        default:
+                            Console.WriteLine("Invalid command.");
+                            break;
+                    }
+                } else {
+                    cpu.ParseLine(cmd);
                 }
             }
-
         }
     }
 }
