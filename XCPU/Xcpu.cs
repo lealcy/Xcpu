@@ -25,6 +25,10 @@ namespace XCPU
             while (pc < memory.Length)
             {
                 InstructionSet.Get(Next()).Execute(this);
+                if (GetFlag(Flags.Interrupt))
+                {
+                    Interrupt();
+                }
             }
         }
 
@@ -118,5 +122,6 @@ namespace XCPU
         Equal = 3,
         Greater = 4,
         Less = 5,
+        Interrupt = 6,
     }
 }

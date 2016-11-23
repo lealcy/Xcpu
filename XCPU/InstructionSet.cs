@@ -10,7 +10,7 @@ namespace XCPU
     {
         public static Instruction[] Instructions = new Instruction[] {
                 new Instruction(0, "halt", 0, (cpu) => { cpu.SetFlag(Flags.Halt, true); }),
-                new Instruction(1, "int", 0, (cpu) => { cpu.Interrupt(); }),
+                new Instruction(1, "int", 0, (cpu) => { cpu.SetFlag(Flags.Interrupt, true); }),
                 new Instruction(2, "noop", 0, (cpu) => { /* do nothing */ }),
                 new Instruction(3, "set", 2, (cpu) => {
                     int reg = cpu.Next();
