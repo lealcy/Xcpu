@@ -13,28 +13,27 @@ namespace XCPU
         {
             Xcpu cpu = new Xcpu();
             string cmd;
-            Console.WriteLine("Commands starts with '/'.");
             while (true) {
-                Console.Write("{0,5:D5}: ", cpu.pc);
+                Console.Write("{0,5:D5}: ", cpu.GetPC());
                 cmd = Console.ReadLine();
                 string command = cmd.Split(' ')[0].Trim().ToLower();
-                if (command.StartsWith("/")) {
+                if (command.Length == 1) {
                     switch (command) {
-                        case "/exit":
+                        case "x":
                             return;
-                        case "/run":
+                        case "r":
                             cpu.Run();
                             break;
-                        case "/reset":
-                            cpu.pc = 0;
-                            break;
-                        case "/jump":
+                        case "j":
                             string param = cmd.Substring(6).Trim();
-                            if (!int.TryParse(param, out cpu.pc)) {
+                            int pc;
+                            if (!int.TryParse(param, out pc)) {
                                 Console.WriteLine("Expected memory address.");
+                                break;
                             }
+                            cpu.SetPC(pc);
                             break;
-                        case "/state":
+                        case "s":
                             cpu.PrintState();
                             break;
                         default:
@@ -42,7 +41,8 @@ namespace XCPU
                             break;
                     }
                 } else {
-                    cpu.ParseLine(cmd);
+                    int[] code = Parser.Parse(cmd);
+                    cpu.Write(code, cpu.GetPC());
                 }
             }
         }

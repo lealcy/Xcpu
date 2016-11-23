@@ -70,6 +70,19 @@ namespace XCPU
                 //new Instruction(0, "", 0, (cpu) => { }),
             };
 
+
+        public static Instruction Get(int opcode)
+        {
+            foreach (Instruction i in Instructions)
+            {
+                if (i.Opcode == opcode)
+                {
+                    return i;
+                }
+            }
+            throw new ArgumentOutOfRangeException("opcode", "Invalid opcode");
+        }
+
         public static bool HasName(string name)
         {
             foreach (Instruction i in Instructions)
@@ -101,14 +114,14 @@ namespace XCPU
         public int Opcode;
         public string Name;
         public int NumOperands;
-        public OperationMethod Operation;
+        public OperationMethod Execute;
 
         public Instruction(int opcode, string name, int numOperands, OperationMethod operation)
         {
             Opcode = opcode;
             Name = name;
             NumOperands = numOperands;
-            Operation = operation;
+            Execute = operation;
         }
     }
 }
