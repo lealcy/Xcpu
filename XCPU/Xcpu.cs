@@ -11,29 +11,32 @@ namespace XCPU
     class Xcpu
     {
         public const int
-            InstrHalt = 0,
-            InstrInt = 1,
-            InstrSet = 2,
-            InstrLoad = 3,
-            InstrStore = 4,
-            InstrShift = 100,
-            InstrUnshift = 101,
-            InstrJump = 200,
-            InstrJz = 201,
-            InstrJnz = 202,
-            InstrTest = 300,
-            InstrNoop = 1024,
-            FlagHalt = 0,
-            FlagException = 1,
-            FlagZero = 0,
-            FlagEqual = 0,
-            FlagGreater = 0,
-            FlagLess = 0;
+            I_halt = 0,
+            I_int = 1,
+            I_set = 2,
+            I_load = 3,
+            I_store = 4,
+            I_shift = 100,
+            I_unshift = 101,
+            I_jump = 200,
+            I_jz = 201,
+            I_jnz = 202,
+            I_test = 300,
+            I_noop = 1024,
+            F_halt = 0,
+            F_exception = 1,
+            F_zero = 0,
+            F_equal = 0,
+            F_greater = 0,
+            F_less = 0;
 
-        int[] memory = new int[128];
-        public int pc = 0;
-        BitArray flags = new BitArray(sizeof(int));
-        int[] regs = new int[16];
+        public static readonly int  MemorySize = 128;
+        public static readonly int NumRegs = 16;
+
+        int[] memory = new int[MemorySize];
+        int pc = 0;
+        BitArray Flags = new BitArray(sizeof(int));
+        int[] regs = new int[NumRegs];
 
         public void Run()
         {
@@ -44,70 +47,70 @@ namespace XCPU
             {
                 switch (memory[pc])
                 {
-                    case InstrHalt:
-                        flags[FlagHalt] = true;
+                    case I_halt:
+                        Flags[F_halt] = true;
                         return;
-                    case InstrInt:
+                    case I_int:
                         Interrupt();
                         break;
-                    case InstrNoop:
+                    case I_noop:
                         continue;
-                    case InstrSet:
+                    case I_set:
                         reg = memory[++pc];
                         int value = memory[++pc];
                         regs[reg] = value;
                         break;
-                    case InstrLoad:
+                    case I_load:
                         reg = memory[++pc];
                         addr = memory[++pc];
                         regs[reg] = memory[addr];
                         break;
-                    case InstrStore:
+                    case I_store:
                         reg = memory[++pc];
                         addr = memory[++pc];
                         memory[addr] = regs[reg];
                         break;
-                    case InstrShift:
+                    case I_shift:
                         for (reg = regs.Length - 1; reg > 0; reg--)
                         {
                             regs[reg] = regs[reg - 1];
                         }
                         regs[0] = 0;
                         break;
-                    case InstrUnshift:
+                    case I_unshift:
                         for (reg = 0; reg < regs.Length - 1; reg++)
                         {
                             regs[reg] = regs[reg + 1];
                         }
                         regs[regs.Length - 1] = 0;
                         break;
-                    case InstrJump:
+                    case I_jump:
                         reg = memory[++pc];
                         pc = regs[reg] - 1; // Conterfeit the pc auto inc in the next cycle.
                         break;
-                    case InstrJz:
+                    case I_jz:
                         reg = memory[++pc];
-                        if(flags[FlagZero]) {
+                        if(Flags[F_zero]) {
                             pc = regs[reg] - 1; 
                         }
                         break;
-                    case InstrJnz:
+                    case I_jnz:
                         reg = memory[++pc];
-                        if (!flags[FlagZero])
+                        if (!Flags[F_zero])
                         {
                             pc = regs[reg] - 1;
                         }
                         break;
-                    case InstrTest:
+                    case I_test:
                         int reg1 = memory[++pc];
                         int reg2 = memory[++pc];
-                        flags[FlagZero] = reg1 == 0 ? true : false;
-                        flags[FlagEqual] = reg1 == reg2 ? true : false;
-                        flags[FlagGreater] = reg1 > reg2 ? true : false;
-                        flags[FlagLess] = reg1 < reg2 ? true : false;
+                        Flags[F_zero] = reg1 == 0 ? true : false;
+                        Flags[F_equal] = reg1 == reg2 ? true : false;
+                        Flags[F_greater] = reg1 > reg2 ? true : false;
+                        Flags[F_less] = reg1 < reg2 ? true : false;
                         break;
                     default:
-                        flags[FlagException] = true;
+                        Flags[F_exception] = true;
                         break;
                 }
             }
@@ -143,30 +146,30 @@ namespace XCPU
                 switch (opcode)
                 {
                     case "halt":
-                        memory[pc++] = InstrHalt;
+                        memory[pc++] = I_halt;
                         break;
                     case "int":
-                        memory[pc++] = InstrInt;
+                        memory[pc++] = I_int;
                         break;
                     case "noop":
-                        memory[pc++] = InstrNoop;
+                        memory[pc++] = I_noop;
                         break;
                     case "set":
-                        memory[pc++] = InstrSet;
+                        memory[pc++] = I_set;
                         if (ParseParam(opcode.Length, line, 2) == false) {
                             pc = cpc;
                             return false;
                         }
                         break;
                     case "load":
-                        memory[pc++] = InstrLoad;
+                        memory[pc++] = I_load;
                         if (ParseParam(opcode.Length, line, 2) == false) {
                             pc = cpc;
                             return false;
                         }
                         break;
                     case "store":
-                        memory[pc++] = InstrStore;
+                        memory[pc++] = I_store;
                         if (ParseParam(opcode.Length, line, 2) == false)
                         {
                             pc = cpc;
@@ -174,20 +177,20 @@ namespace XCPU
                         }
                         break;
                     case "shift":
-                        memory[pc++] = InstrShift;
+                        memory[pc++] = I_shift;
                         break;
                     case "unshift":
-                        memory[pc++] = InstrUnshift;
+                        memory[pc++] = I_unshift;
                         break;
                     case "jump":
-                        memory[pc++] = InstrJump;
+                        memory[pc++] = I_jump;
                         if (ParseParam(opcode.Length, line, 1) == false) {
                             pc = cpc;
                             return false;
                         }
                         break;
                     case "jz":
-                        memory[pc++] = InstrJz;
+                        memory[pc++] = I_jz;
                         if (ParseParam(opcode.Length, line, 1) == false)
                         {
                             pc = cpc;
@@ -195,7 +198,7 @@ namespace XCPU
                         }
                         break;
                     case "test":
-                        memory[pc++] = InstrTest;
+                        memory[pc++] = I_test;
                         if (ParseParam(opcode.Length, line, 2) == false) {
                             pc = cpc;
                             return false;
@@ -243,23 +246,19 @@ namespace XCPU
         public void Interrupt()
         {
             switch(regs[1]) {
-                case 1: // Print
-                    switch(regs[2]) {
-                        case 0: // Print number
-                            Console.Write(regs[3]);
-                            break;
-                        case 1: // Print char
-                            Console.Write((char)regs[3]);
-                            break;
-                        case 2: // Print chars from memory until found '0'
-                            while (regs[3] < memory.Length && memory[regs[3]] != 0) {
-                                Console.Write((char)memory[regs[3]]);
-                                regs[3]++;
-                            }
-                            if (regs[3] >= memory.Length) {
-                                flags[FlagException] = true;
-                            }
-                            break;
+                case 10: // Print integer
+                    Console.Write(regs[2]);
+                    break;
+                case 11: // Print char
+                    Console.Write((char)regs[2]);
+                    break;
+                case 12: // Print chars from memory until found '0'
+                    while (regs[2] < memory.Length && memory[regs[2]] != 0) {
+                        Console.Write((char)memory[regs[2]]);
+                        regs[2]++;
+                    }
+                    if (regs[2] >= memory.Length) {
+                        Flags[F_exception] = true;
                     }
                     break;
             }
@@ -269,5 +268,55 @@ namespace XCPU
         {
             Console.WriteLine("PC: {0}; REGS: {1}", pc, string.Join(", ", regs));
         }
+
+        public int GetReg(int reg)
+        {
+            return regs[reg];
+        }
+
+        public void SetReg(int reg, int value)
+        {
+            regs[reg] = value;
+        }
+
+        public void SetFlag(Flags flag, bool value)
+        {
+            Flags[(int)flag] = value;
+        }
+
+        public bool GetFlag(Flags flag)
+        {
+            return Flags[(int)flag];
+        }
+
+        public int GetAddress(int address)
+        {
+            return memory[address];
+        }
+
+        public void SetAddress(int address, int value)
+        {
+            memory[address] = value;
+        }
+
+        public int Next()
+        {
+            return memory[pc++];
+        }
+
+        public void SetPC(int address)
+        {
+            pc = address;
+        }
+    }
+
+    enum Flags
+    {
+        Halt = 0,
+        Exception = 1,
+        Zero = 2,
+        Equal = 3,
+        Greater = 4,
+        Less = 5,
     }
 }
