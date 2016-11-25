@@ -11,9 +11,11 @@ namespace XCPU
         public static int[] Parse(string program)
         {
             List<int> code = new List<int>();
+            int lineNumber = 0;
 
             foreach (string rawLine in program.Split('\n'))
             {
+                lineNumber++;
                 string line = rawLine.Trim();
                 if (line.Length == 0 || line[0] == '#')
                 {
@@ -28,19 +30,19 @@ namespace XCPU
                 }
                 if (command.Length == line.Length)
                 {
-                    throw new FormatException(string.Format("Invalid number of operands for {0}; expected {1}, received zero.", command, instr.NumOperands));
+                    throw new FormatException(string.Format("Line {0}: Invalid number of operands for {1}; expected {2}, received zero.", lineNumber, command, instr.NumOperands));
                 }
                 string[] operands = line.Substring(command.Length + 1).Split(',');
                 if (operands.Length != instr.NumOperands)
                 {
-                    throw new FormatException(string.Format("Invalid number of operands for {0}; expected {1}, received {2}", command, instr.NumOperands, operands.Length));
+                    throw new FormatException(string.Format("Line {0}: Invalid number of operands for {1}; expected {2}, received {3}", line, command, instr.NumOperands, operands.Length));
                 }
                 foreach (string operand in operands)
                 {
                     string oper = operand.Trim();
                     if (oper.Length == 0)
                     {
-                        throw new ArgumentException(string.Format("Empty operand for {0}", command));
+                        throw new ArgumentException(string.Format("Line {0}: Empty operand for {1}", lineNumber, command));
                     }
                     int value;
                     if (int.TryParse(oper, out value))
@@ -51,13 +53,13 @@ namespace XCPU
                     {
                         if (oper.Length != 2)
                         {
-                            throw new ArgumentException(string.Format("Invalid char to int conversion for operand {0}", oper));
+                            throw new ArgumentException(string.Format("Line {0}: Invalid char to int conversion for operand {1}", lineNumber, oper));
                         }
                         code.Add(oper[1]);
                     }
                     else
                     {
-                        throw new ArgumentException(string.Format("Invalid argument for {0}", command));
+                        throw new ArgumentException(string.Format("Line {0}: Invalid argument for {1}", lineNumber, command));
                     }
                 }
             }

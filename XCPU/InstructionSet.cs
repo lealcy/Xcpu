@@ -27,7 +27,6 @@ namespace XCPU
                     int address = cpu.Next();
                     cpu.SetAddress(address, cpu.GetReg(reg));
                 }),
-                new Instruction(5, "", 0, (cpu) => { }),
                 new Instruction(6, "shift", 0, (cpu) => {
                     for (int i = Xcpu.NumRegs - 1; i > 0; i--)
                     {
@@ -67,7 +66,21 @@ namespace XCPU
                         cpu.SetPC(address);
                     }
                 }),
-                //new Instruction(0, "", 0, (cpu) => { }),
+                new Instruction(32, "settrap", 1, (cpu) => {
+                    int address = cpu.Next();
+                    cpu.SetExceptionTrap(address);
+                }),
+                new Instruction(33, "raise", 0, (cpu) => {
+                    cpu.RaiseException();
+                }),
+                new Instruction(34, "resume", 0, (cpu) => {
+                    cpu.ResumeFromException();
+                }),
+                new Instruction(0, "", 0, (cpu) => { }),
+                new Instruction(0, "", 0, (cpu) => { }),
+                new Instruction(0, "", 0, (cpu) => { }),
+                new Instruction(0, "", 0, (cpu) => { }),
+                new Instruction(0, "", 0, (cpu) => { }),
             };
 
 
@@ -80,7 +93,7 @@ namespace XCPU
                     return i;
                 }
             }
-            throw new ArgumentOutOfRangeException("opcode", "Invalid opcode");
+            throw new ArgumentOutOfRangeException("opcode", string.Format("Invalid opcode: {0}", opcode));
         }
 
         public static bool HasName(string name)

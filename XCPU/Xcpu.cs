@@ -10,13 +10,16 @@ namespace XCPU
 {
     class Xcpu
     {
-        public static readonly int  MemorySize = 128;
-        public static readonly int NumRegs = 16;
+        public static readonly int IntegerRange = 8 * sizeof(int);
+        public static readonly int MemorySize = (int)Math.Pow(2, IntegerRange > 22 ? 22 : IntegerRange); // Up to 4MB.
+        public static readonly int NumRegs = IntegerRange;
 
         int[] memory = new int[MemorySize];
-        int pc = 0;
-        BitArray flags = new BitArray(sizeof(int));
-
+        int ip = 0; // Instruction Address
+        int pc = 0; // Program Counter
+        int xt = 0; // Exception Trap Address
+        int xs = 0; // Exception Source Address
+        BitArray flags = new BitArray(IntegerRange);
         int[] regs = new int[NumRegs];
 
         public void Run()
@@ -24,7 +27,14 @@ namespace XCPU
             pc = 0;
             while (pc < memory.Length)
             {
-                InstructionSet.Get(Next()).Execute(this);
+                ip = pc;
+                try
+                {
+                    InstructionSet.Get(Next()).Execute(this);
+                } catch (ArgumentOutOfRangeException e)
+                {
+                    Console.WriteLine("[PC: {0}, IP: {1}: {2}", pc, ip, e.Message);
+                }
                 if (GetFlag(Flags.Interrupt))
                 {
                     Interrupt();
@@ -47,20 +57,12 @@ namespace XCPU
                     Console.Write((char)regs[2]);
                     break;
                 case 12: // Print chars from memory until found '0'
-                    while (regs[2] < memory.Length && memory[regs[2]] != 0) {
-                        Console.Write((char)memory[regs[2]]);
+                    while (GetAddress(regs[2]) != 0) {
+                        Console.Write((char)GetAddress(regs[2]));
                         regs[2]++;
-                    }
-                    if (regs[2] >= memory.Length) {
-                        SetFlag(Flags.Exception, true);
                     }
                     break;
             }
-        }
-
-        private void SetFlag(object exception, bool v)
-        {
-            throw new NotImplementedException();
         }
 
         public void PrintState()
@@ -90,16 +92,28 @@ namespace XCPU
 
         public int GetAddress(int address)
         {
+            if (address > memory.Length - 1)
+            {
+                RaiseException();
+            }
             return memory[address];
         }
 
         public void SetAddress(int address, int value)
         {
+            if (address > memory.Length - 1)
+            {
+                RaiseException();
+            }
             memory[address] = value;
         }
 
         public int Next()
         {
+            if (pc > memory.Length - 1)
+            {
+                RaiseException();
+            }
             return memory[pc++];
         }
 
@@ -111,6 +125,27 @@ namespace XCPU
         public void SetPC(int address)
         {
             pc = address;
+        }
+
+        public void RaiseException()
+        {
+            xs = ip;
+            SetPC(xt);
+        }
+
+        public void SetExceptionTrap(int address)
+        {
+            xt = address;
+        }
+
+        public int GetExceptionTrap()
+        {
+            return xt;
+        }
+
+        public void ResumeFromException()
+        {
+            SetPC(xs);
         }
     }
 
