@@ -17,7 +17,7 @@ namespace XCPU
             Console.WriteLine("CPU integer range is {0} bits.", Xcpu.IntegerRange);
             Console.WriteLine("Installed memory is {0:N0} bytes.", Xcpu.MemorySize);
             while (true) {
-                Console.Write("{0,5:D5}: ", cpu.GetPC());
+                Console.Write("{0,5:D5}: ", cpu.GetR(R.XP));
                 cmd = Console.ReadLine().Trim();
                 switch (cmd.Split(' ')[0]) {
                     case "h":
@@ -39,7 +39,7 @@ namespace XCPU
                             Console.WriteLine("Expected memory address.");
                             break;
                         }
-                        cpu.SetPC(pc);
+                        cpu.SetR(R.XP, pc);
                         break;
                     case "s":
                         cpu.PrintState();
@@ -55,8 +55,8 @@ namespace XCPU
                             Console.WriteLine(e.Message);
                             break;
                         }
-                        cpu.Write(code, cpu.GetPC());
-                        cpu.SetPC(cpu.GetPC() + code.Length);
+                        cpu.Write(code, cpu.GetR(R.XP));
+                        cpu.SetR(R.XP, cpu.GetR(R.XP) + code.Length);
                     break;
                 }
             }

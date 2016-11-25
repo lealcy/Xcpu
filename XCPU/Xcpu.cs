@@ -10,36 +10,40 @@ namespace XCPU
 {
     class Xcpu
     {
-        public static readonly int IntegerRange = 8 * sizeof(int);
-        public static readonly int MemorySize = (int)Math.Pow(2, IntegerRange > 22 ? 22 : IntegerRange); // Up to 4MB.
-        public static readonly int NumRegs = IntegerRange;
+        public const int IntegerRange = 8 * sizeof(int);
+        public const int MemorySize = 0x400000; // Up to 4MB.
+        public const int NumRegs = IntegerRange;
 
         int[] memory = new int[MemorySize];
-        int ip = 0; // Instruction Address
-        int pc = 0; // Program Counter
-        int xt = 0; // Exception Trap Address
-        int xs = 0; // Exception Source Address
-        BitArray flags = new BitArray(IntegerRange);
-        int[] regs = new int[NumRegs];
+        BitArray flags = new BitArray(32);
+        int[] regs = new int[32];
 
         public void Run()
         {
-            pc = 0;
-            while (pc < memory.Length)
+            SetR(R.XP, 0);
+            SetR(R.IP, 0);
+            Continue();
+        }
+
+        public void Continue()
+        {
+            while (GetFlag(F.Halt) == false)
             {
-                ip = pc;
+                Move(R.IP, R.XP);
                 try
                 {
                     InstructionSet.Get(Next()).Execute(this);
-                } catch (ArgumentOutOfRangeException e)
-                {
-                    Console.WriteLine("[PC: {0}, IP: {1}: {2}", pc, ip, e.Message);
                 }
-                if (GetFlag(Flags.Interrupt))
+                catch (ArgumentOutOfRangeException e)
+                {
+                    Console.WriteLine("[XP: {0,5:D5}, IP: {1,5:D5}: {2}", GetR(R.XP), GetR(R.IP), e.Message);
+                }
+                if (GetFlag(F.Interrupt))
                 {
                     Interrupt();
                 }
             }
+            SetFlag(F.Halt, false);
         }
 
         public void Write(int[] source, int startAddress)
@@ -49,51 +53,69 @@ namespace XCPU
 
         public void Interrupt()
         {
-            switch(regs[1]) {
+            switch(GetR(R.R1)) {
                 case 10: // Print integer
-                    Console.Write(regs[2]);
+                    Console.Write(GetR(R.R2));
                     break;
                 case 11: // Print char
-                    Console.Write((char)regs[2]);
+                    Console.Write((char)GetR(R.R2));
                     break;
                 case 12: // Print chars from memory until found '0'
-                    while (GetAddress(regs[2]) != 0) {
-                        Console.Write((char)GetAddress(regs[2]));
-                        regs[2]++;
+                    char ch;
+                    while ((ch = (char)GetAddress(GetR(R.R2))) != 0) {
+                        Console.Write(ch);
+                        Inc(R.R2);
                     }
                     break;
             }
+            SetFlag(F.Interrupt, false);
         }
 
         public void PrintState()
         {
-            Console.WriteLine("PC: {0}; REGS: {1}", pc, string.Join(", ", regs));
+            Console.WriteLine("[XP: {0,5:D5}, IP: {1,5:D5}]", GetR(R.XP), GetR(R.IP));
         }
 
-        public int GetReg(int reg)
+        public int GetR(R r)
         {
-            return regs[reg];
+            return regs[(int)r];
         }
 
-        public void SetReg(int reg, int value)
+        public void SetR(R r, int value)
         {
-            regs[reg] = value;
+            regs[(int)r] = value;
         }
 
-        public void SetFlag(Flags flag, bool value)
+        public void Move(R rd, R rs)
         {
-            flags[(int)flag] = value;
+            SetR(rd, GetR(rs));
         }
 
-        public bool GetFlag(Flags flag)
+        public int Inc(R r)
         {
-            return flags[(int)flag];
+            return regs[(int)r]++;
+        }
+
+        public int Dec(R r)
+        {
+            return regs[(int)r]--;
+        }
+
+        public void SetFlag(F f, bool value)
+        {
+            flags[(int)f] = value;
+        }
+
+        public bool GetFlag(F f)
+        {
+            return flags[(int)f];
         }
 
         public int GetAddress(int address)
         {
-            if (address > memory.Length - 1)
+            if (address >= MemorySize)
             {
+                SetFlag(F.InvalidAddress, true);
                 RaiseException();
             }
             return memory[address];
@@ -101,8 +123,9 @@ namespace XCPU
 
         public void SetAddress(int address, int value)
         {
-            if (address > memory.Length - 1)
+            if (address >= MemorySize)
             {
+                SetFlag(F.InvalidAddress, true);
                 RaiseException();
             }
             memory[address] = value;
@@ -110,46 +133,27 @@ namespace XCPU
 
         public int Next()
         {
-            if (pc > memory.Length - 1)
+            if (GetR(R.XP) >= MemorySize)
             {
+                SetFlag(F.InvalidAddress, true);
                 RaiseException();
             }
-            return memory[pc++];
-        }
-
-        public int GetPC()
-        {
-            return pc;
-        }
-
-        public void SetPC(int address)
-        {
-            pc = address;
+            return memory[Inc(R.XP)];
         }
 
         public void RaiseException()
         {
-            xs = ip;
-            SetPC(xt);
+            Move(R.EIP, R.IP);
+            Move(R.XP, R.EXP);
         }
 
-        public void SetExceptionTrap(int address)
+        public void Resume()
         {
-            xt = address;
-        }
-
-        public int GetExceptionTrap()
-        {
-            return xt;
-        }
-
-        public void ResumeFromException()
-        {
-            SetPC(xs);
+            Move(R.XP, R.EIP);
         }
     }
 
-    enum Flags
+    enum F
     {
         Halt = 0,
         Exception = 1,
@@ -158,5 +162,15 @@ namespace XCPU
         Greater = 4,
         Less = 5,
         Interrupt = 6,
+        InvalidAddress = 7,
+    }
+
+    enum R
+    {
+        R0 = 0, R1 = 1, R2 = 2, R3 = 3, R4 = 4, R5 = 5, R6 = 6, R7 = 7, R8 = 8, R9 = 9, // General purpose registers.
+        XP = 16, // eXecution Pointer - Current memory address read by the CPU.
+        IP = 17, // Instruction Pointer - Current instruction memory address been executed by the CPU.
+        EXP = 29, // Exception eXecution pointer - Memory address to jump in case of exception.
+        EIP = 30, // Exception Instruction pointer - Memory address of the Instruction been executed when the exception raise.
     }
 }

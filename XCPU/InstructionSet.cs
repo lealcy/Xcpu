@@ -9,78 +9,61 @@ namespace XCPU
     class InstructionSet
     {
         public static Instruction[] Instructions = new Instruction[] {
-                new Instruction(0, "halt", 0, (cpu) => { cpu.SetFlag(Flags.Halt, true); }),
-                new Instruction(1, "int", 0, (cpu) => { cpu.SetFlag(Flags.Interrupt, true); }),
+                new Instruction(0, "halt", 0, (cpu) => { cpu.SetFlag(F.Halt, true); }),
+                new Instruction(1, "int", 0, (cpu) => { cpu.SetFlag(F.Interrupt, true); }),
                 new Instruction(2, "noop", 0, (cpu) => { /* do nothing */ }),
                 new Instruction(3, "set", 2, (cpu) => {
                     int reg = cpu.Next();
                     int value = cpu.Next();
-                    cpu.SetReg(reg, value);
+                    cpu.SetR((R)reg, value);
                 }),
                 new Instruction(4, "load", 2, (cpu) => {
                     int reg = cpu.Next();
                     int address = cpu.Next();
-                    cpu.SetReg(reg, cpu.GetAddress(address));
+                    cpu.SetR((R)reg, cpu.GetAddress(address));
                 }),
                 new Instruction(5, "store", 2, (cpu) => {
                     int reg = cpu.Next();
                     int address = cpu.Next();
-                    cpu.SetAddress(address, cpu.GetReg(reg));
-                }),
-                new Instruction(6, "shift", 0, (cpu) => {
-                    for (int i = Xcpu.NumRegs - 1; i > 0; i--)
-                    {
-                        cpu.SetReg(i, cpu.GetReg(i - 1));
-                    }
-                }),
-                new Instruction(7, "unshift", 0, (cpu) => {
-                    for (int i = 0; i < Xcpu.NumRegs - 1; i++)
-                    {
-                        cpu.SetReg(i, cpu.GetReg(i + 1));
-                    }
-                    cpu.SetReg(Xcpu.NumRegs - 1, 0);
+                    cpu.SetAddress(address, cpu.GetR((R)reg));
                 }),
                 new Instruction(8, "test", 2, (cpu) => {
-                    int reg1 = cpu.Next();
-                    int reg2 = cpu.Next();
-                    cpu.SetFlag(Flags.Zero, reg1 == 0 ? true : false);
-                    cpu.SetFlag(Flags.Equal, reg1 == reg2 ? true : false);
-                    cpu.SetFlag(Flags.Greater, reg1 > reg2 ? true : false);
-                    cpu.SetFlag(Flags.Less, reg1 < reg2 ? true : false);
+                    R r1 = (R)cpu.Next();
+                    R r2 = (R)cpu.Next();
+                    cpu.SetFlag(F.Zero, cpu.GetR(r1) == 0 ? true : false);
+                    cpu.SetFlag(F.Equal, cpu.GetR(r1) == cpu.GetR(r2) ? true : false);
+                    cpu.SetFlag(F.Greater, cpu.GetR(r1) > cpu.GetR(r2) ? true : false);
+                    cpu.SetFlag(F.Less, cpu.GetR(r1) < cpu.GetR(r2) ? true : false);
                 }),
                 new Instruction(16, "jump", 1, (cpu) => {
                     int address = cpu.Next();
-                    cpu.SetPC(address);
+                    cpu.SetR(R.XP, address);
                 }),
                 new Instruction(17, "jz", 1, (cpu) => {
                     int address = cpu.Next();
-                    if (cpu.GetFlag(Flags.Zero))
+                    if (cpu.GetFlag(F.Zero))
                     {
-                        cpu.SetPC(address);
+                        cpu.SetR(R.XP, address);
                     }
                 }),
                 new Instruction(18, "jnz", 1, (cpu) => {
                     int address = cpu.Next();
-                    if (!cpu.GetFlag(Flags.Zero))
+                    if (!cpu.GetFlag(F.Zero))
                     {
-                        cpu.SetPC(address);
+                        cpu.SetR(R.XP, address);
                     }
                 }),
                 new Instruction(32, "settrap", 1, (cpu) => {
                     int address = cpu.Next();
-                    cpu.SetExceptionTrap(address);
+                    cpu.SetR(R.EXP, address);
                 }),
                 new Instruction(33, "raise", 0, (cpu) => {
                     cpu.RaiseException();
                 }),
                 new Instruction(34, "resume", 0, (cpu) => {
-                    cpu.ResumeFromException();
+                    cpu.Resume();
                 }),
-                new Instruction(0, "", 0, (cpu) => { }),
-                new Instruction(0, "", 0, (cpu) => { }),
-                new Instruction(0, "", 0, (cpu) => { }),
-                new Instruction(0, "", 0, (cpu) => { }),
-                new Instruction(0, "", 0, (cpu) => { }),
+                //new Instruction(0, "", 0, (cpu) => { }),
             };
 
 
