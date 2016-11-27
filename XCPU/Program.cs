@@ -13,6 +13,7 @@ namespace XCPU
         {
             Xcpu cpu = new Xcpu();
             string cmd;
+            string param;
             Console.WriteLine("Type 'h' for help.");
             Console.WriteLine("CPU integer range is {0} bits.", Xcpu.IntegerRange);
             Console.WriteLine("Installed memory is {0:N0} bytes.", Xcpu.MemorySize);
@@ -22,24 +23,46 @@ namespace XCPU
                 switch (cmd.Split(' ')[0]) {
                     case "h":
                         Console.WriteLine("Available Commands:");
+                        Console.WriteLine("\td <address> - Disassemble from zero to address.");
                         Console.WriteLine("\tj <address> - Jump to address.");
                         Console.WriteLine("\tr - Run code.");
                         Console.WriteLine("\ts - Show CPU state.");
                         Console.WriteLine("\tx - Exit.");
                         break;
+                    case "d":
+                        if (cmd.Length < 3)
+                        {
+                            Console.WriteLine("Expected memory address.");
+                            break;
+                        }
+                        param = cmd.Substring(2).Trim();
+                        int endAddress;
+                        if (!int.TryParse(param, out endAddress))
+                        {
+                            Console.WriteLine("Expected memory address.");
+                            break;
+                        }
+                        Console.WriteLine(Parser.Disassembly(cpu.Read(0, endAddress)));
+                        break;
                     case "x":
                         return;
                     case "r":
                         cpu.Run();
+                        cpu.Dec(R.XP);
                         break;
                     case "j":
-                        string param = cmd.Substring(2).Trim();
-                        int pc;
-                        if (!int.TryParse(param, out pc)) {
+                        if (cmd.Length < 3)
+                        {
                             Console.WriteLine("Expected memory address.");
                             break;
                         }
-                        cpu.SetR(R.XP, pc);
+                        param = cmd.Substring(2).Trim();
+                        int address;
+                        if (!int.TryParse(param, out address)) {
+                            Console.WriteLine("Expected memory address.");
+                            break;
+                        }
+                        cpu.SetR(R.XP, address);
                         break;
                     case "s":
                         cpu.PrintState();

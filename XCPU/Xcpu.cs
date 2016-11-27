@@ -71,6 +71,11 @@ namespace XCPU
             SetFlag(F.Interrupt, false);
         }
 
+        public int[] Read(int start, int end)
+        {
+            return memory.Skip(start).Take(end - start).ToArray();
+        }
+
         public void PrintState()
         {
             Console.WriteLine("[XP: {0,5:D5}, IP: {1,5:D5}]", GetR(R.XP), GetR(R.IP));

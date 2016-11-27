@@ -66,20 +66,21 @@ namespace XCPU
             return code.ToArray();
         }
 
-        public string Disassembly(int[] code)
+        public static string Disassembly(int[] code)
         {
             string program = "";
-            int[] operands;
             Instruction instr;
             int i = 0;
             while (i < code.Length)
             {
                 instr = InstructionSet.Get(code[i]);
-                program += instr.Opcode + " ";
-                for (int o = i; o < o + instr.NumOperands; o++, i++)
+                program += instr.Name + " ";
+                if (instr.NumOperands > 0)
                 {
-                    //program += 
+                    program += string.Join(", ", code.Skip(i + 1).Take(instr.NumOperands).ToArray());
                 }
+                i += instr.NumOperands + 1;
+                program += "\n";
             }
 
             return program;
