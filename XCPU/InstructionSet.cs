@@ -35,7 +35,12 @@ namespace XCPU
                     cpu.SetFlag(F.Greater, cpu.GetR(r1) > cpu.GetR(r2) ? true : false);
                     cpu.SetFlag(F.Less, cpu.GetR(r1) < cpu.GetR(r2) ? true : false);
                 }),
-                new Instruction(16, "jump", 1, (cpu) => {
+                new Instruction(9, "cstr", 1, (cpu) => {
+                    while (cpu.Next() != 0) ;
+                    //cpu.Next();
+                }),
+
+            new Instruction(16, "jump", 1, (cpu) => {
                     int address = cpu.Next();
                     cpu.SetR(R.XP, address);
                 }),

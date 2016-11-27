@@ -32,6 +32,20 @@ namespace XCPU
                 {
                     throw new FormatException(string.Format("Line {0}: Invalid number of operands for {1}; expected {2}, received zero.", lineNumber, command, instr.NumOperands));
                 }
+                if (instr.Name == "cstr")
+                {
+                    string operand = line.Substring(command.Length).Trim();
+                    if (!operand.StartsWith("\"") || !operand.EndsWith("\""))
+                    {
+                        throw new FormatException(string.Format("Line {0}: Invalid operand format; expected C string, received '{1}'.", lineNumber, operand));
+                    }
+                    foreach (int c in operand.Trim('"'))
+                    {
+                        code.Add(c);
+                    }
+                    code.Add(0);
+                    continue;
+                }
                 string[] operands = line.Substring(command.Length + 1).Split(',');
                 if (operands.Length != instr.NumOperands)
                 {
@@ -77,9 +91,19 @@ namespace XCPU
                 program += instr.Name + " ";
                 if (instr.NumOperands > 0)
                 {
-                    program += string.Join(", ", code.Skip(i + 1).Take(instr.NumOperands).ToArray());
+                    if (instr.Name == "cstr")
+                    {
+                        string cstr = string.Join("", code.Skip(i + 1).TakeWhile((ch, index) => ch != 0).Select(ch => (char)ch).ToArray());
+                        program += "\"" + cstr + "\"";
+                        i += cstr.Length + 1;
+                    }
+                    else
+                    {
+                        program += string.Join(", ", code.Skip(i + 1).Take(instr.NumOperands).ToArray());
+                        i += instr.NumOperands;
+                    }
                 }
-                i += instr.NumOperands + 1;
+                i++;
                 program += "\n";
             }
 

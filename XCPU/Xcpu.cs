@@ -62,9 +62,8 @@ namespace XCPU
                     break;
                 case 12: // Print chars from memory until found '0'
                     char ch;
-                    while ((ch = (char)GetAddress(GetR(R.R2))) != 0) {
+                    while ((ch = (char)GetAddress(Inc(R.R2))) != 0) {
                         Console.Write(ch);
-                        Inc(R.R2);
                     }
                     break;
             }
