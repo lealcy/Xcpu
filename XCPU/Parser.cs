@@ -8,12 +8,43 @@ namespace XCPU
 {
     class Parser
     {
+        static Dictionary<string, int> labels = new Dictionary<string, int>();
+
         public static int[] Parse(string program)
         {
-            List<int> code = new List<int>();
+            var code = new List<int>();
             int lineNumber = 0;
+            var lines = program.Split('\n');
+            int xp = 0;
 
-            foreach (string rawLine in program.Split('\n'))
+            // Record labels
+            foreach(string rawLine in lines)
+            {
+                string line = rawLine.Trim();
+                if (line.Length == 0 || line[0] == '#')
+                {
+                    continue;
+                }
+                string command = line.Split(' ')[0].ToLower();
+                if (command.EndsWith(":"))
+                {
+                    // It's a label
+                    labels[command.Substring(0, command.Length - 1)] = xp;
+                    continue;
+                }
+                Instruction instr = InstructionSet.GetInstructionByName(command);
+                if (instr.Name == "cstr")
+                {
+                    xp += line.Substring(command.Length + 1).Trim().Trim('\"').Length + 2;
+                }
+                else
+                {
+                    xp += instr.NumOperands + 1;
+                }
+
+            }
+
+            foreach (string rawLine in lines)
             {
                 lineNumber++;
                 string line = rawLine.Trim();
@@ -21,7 +52,12 @@ namespace XCPU
                 {
                     continue;
                 }
-                string command = line.Split(' ')[0];
+                string command = line.Split(' ')[0].ToLower();
+                if (command.EndsWith(":"))
+                {
+                    // It's a label
+                    continue;
+                }
                 Instruction instr = InstructionSet.GetInstructionByName(command);
                 code.Add(instr.Opcode);
                 if (instr.NumOperands == 0)
@@ -70,6 +106,10 @@ namespace XCPU
                             throw new ArgumentException(string.Format("Line {0}: Invalid char to int conversion for operand {1}", lineNumber, oper));
                         }
                         code.Add(oper[1]);
+                    }
+                    else if (labels.ContainsKey(oper))
+                    {
+                        code.Add(labels[oper]);
                     }
                     else
                     {

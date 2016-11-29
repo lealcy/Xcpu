@@ -62,6 +62,7 @@ namespace XCPU
                     break;
                 case 12: // Print chars from memory until found '0'
                     char ch;
+                    Inc(R.R2); // Jump the 'cstr' opcode.
                     while ((ch = (char)GetAddress(Inc(R.R2))) != 0) {
                         Console.Write(ch);
                     }

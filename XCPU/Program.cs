@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,6 +15,7 @@ namespace XCPU
             Xcpu cpu = new Xcpu();
             string cmd;
             string param;
+            int[] code;
             Console.WriteLine("Type 'h' for help.");
             Console.WriteLine("CPU integer range is {0} bits.", Xcpu.IntegerRange);
             Console.WriteLine("Installed memory is {0:N0} bytes.", Xcpu.MemorySize);
@@ -44,6 +46,22 @@ namespace XCPU
                         }
                         Console.WriteLine(Parser.Disassembly(cpu.Read(0, endAddress)));
                         break;
+                    case "l":
+                        // load from file
+                        StreamReader f;
+                        try
+                        {
+                            f = new StreamReader(cmd.Split(' ')[1]);
+                        } catch (FileNotFoundException e)
+                        {
+                            Console.WriteLine(e.Message);
+                            break;
+                        }
+                        code = Parser.Parse(f.ReadToEnd());
+                        f.Close();
+                        cpu.Write(code, cpu.GetR(R.XP));
+                        cpu.SetR(R.XP, cpu.GetR(R.XP) + code.Length);
+                        break;
                     case "x":
                         return;
                     case "r":
@@ -68,7 +86,6 @@ namespace XCPU
                         cpu.PrintState();
                         break;
                     default:
-                        int[] code;
                         try
                         {
                             code = Parser.Parse(cmd);
