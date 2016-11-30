@@ -27,6 +27,7 @@ namespace XCPU
                         Console.WriteLine("Available Commands:");
                         Console.WriteLine("\td <address> - Disassemble from zero to address.");
                         Console.WriteLine("\tj <address> - Jump to address.");
+                        Console.WriteLine("\tl <file> - Load program into memory.");
                         Console.WriteLine("\tr - Run code.");
                         Console.WriteLine("\ts - Show CPU state.");
                         Console.WriteLine("\tx - Exit.");

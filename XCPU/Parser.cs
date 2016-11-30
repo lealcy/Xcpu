@@ -13,25 +13,31 @@ namespace XCPU
         public static int[] Parse(string program)
         {
             var code = new List<int>();
-            int lineNumber = 0;
             var lines = program.Split('\n');
             int xp = 0;
+            int lineNumber;
 
-            // Record labels
-            foreach(string rawLine in lines)
+            // Search for labels
+            for (lineNumber = 0; lineNumber < lines.Length; lineNumber++)
             {
-                string line = rawLine.Trim();
+                string line = lines[lineNumber].Trim();
                 if (line.Length == 0 || line[0] == '#')
                 {
                     continue;
                 }
-                string command = line.Split(' ')[0].ToLower();
-                if (command.EndsWith(":"))
+                if (line[0] == '.')
                 {
-                    // It's a label
-                    labels[command.Substring(0, command.Length - 1)] = xp;
-                    continue;
+                    // Line starts with a label
+                    string label = line.Split(' ')[0].TrimEnd(':');
+                    labels[label] = xp;
+                    // Strips label from the line
+                    line = line.Substring(line.Split(' ')[0].Length).Trim();
+                    if (line.Length == 0 || line[0] == '#')
+                    {
+                        continue;
+                    }
                 }
+                string command = line.Split(' ')[0].ToLower();
                 Instruction instr = InstructionSet.GetInstructionByName(command);
                 if (instr.Name == "cstr")
                 {
@@ -41,23 +47,25 @@ namespace XCPU
                 {
                     xp += instr.NumOperands + 1;
                 }
-
             }
 
-            foreach (string rawLine in lines)
+            for (lineNumber = 0; lineNumber < lines.Length; lineNumber++)
             {
-                lineNumber++;
-                string line = rawLine.Trim();
+                string line = lines[lineNumber].Trim();
                 if (line.Length == 0 || line[0] == '#')
                 {
                     continue;
                 }
-                string command = line.Split(' ')[0].ToLower();
-                if (command.EndsWith(":"))
+                if (line[0] == '.')
                 {
-                    // It's a label
-                    continue;
+                    // Strips label from the line
+                    line = line.Substring(line.Split(' ')[0].Length).Trim();
+                    if (line.Length == 0 || line[0] == '#')
+                    {
+                        continue;
+                    }
                 }
+                string command = line.Split(' ')[0].ToLower();
                 Instruction instr = InstructionSet.GetInstructionByName(command);
                 code.Add(instr.Opcode);
                 if (instr.NumOperands == 0)
