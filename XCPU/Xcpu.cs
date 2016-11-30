@@ -11,7 +11,7 @@ namespace XCPU
     class Xcpu
     {
         public const int IntegerRange = 8 * sizeof(int);
-        public const int MemorySize = 0x400000; // Up to 4MB.
+        public const int MemorySize = 0x400000 / sizeof(int);
         public const int NumRegs = IntegerRange;
 
         int[] memory = new int[MemorySize];
@@ -22,6 +22,7 @@ namespace XCPU
         {
             SetR(R.XP, 0);
             SetR(R.IP, 0);
+            SetR(R.SP, MemorySize - 1);
             Continue();
         }
 
@@ -158,6 +159,7 @@ namespace XCPU
         }
     }
 
+    // Flags
     enum F
     {
         Halt = 0,
@@ -170,11 +172,13 @@ namespace XCPU
         InvalidAddress = 7,
     }
 
+    // Registers
     enum R
     {
         R0 = 0, R1 = 1, R2 = 2, R3 = 3, R4 = 4, R5 = 5, R6 = 6, R7 = 7, R8 = 8, R9 = 9, // General purpose registers.
         XP = 16, // eXecution Pointer - Current memory address read by the CPU.
         IP = 17, // Instruction Pointer - Current instruction memory address been executed by the CPU.
+        SP = 18, // Stack Pointer
         EXP = 29, // Exception eXecution pointer - Memory address to jump in case of exception.
         EIP = 30, // Exception Instruction pointer - Memory address of the Instruction been executed when the exception raise.
     }

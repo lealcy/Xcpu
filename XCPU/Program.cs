@@ -58,8 +58,19 @@ namespace XCPU
                             Console.WriteLine(e.Message);
                             break;
                         }
-                        code = Parser.Parse(f.ReadToEnd());
-                        f.Close();
+                        try
+                        {
+                            code = Parser.Parse(f.ReadToEnd());
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e.Message);
+                            break;
+                        }
+                        finally
+                        {
+                            f.Close();
+                        }
                         cpu.Write(code, cpu.GetR(R.XP));
                         cpu.SetR(R.XP, cpu.GetR(R.XP) + code.Length);
                         break;

@@ -32,6 +32,15 @@ namespace XCPU
                     R r2 = (R)cpu.Next();
                     cpu.Move(r1, r2);
                 }),
+                new Instruction(7, "push", 1, (cpu) => {
+                    R r = (R)cpu.Next();
+                    cpu.SetAddress(cpu.Dec(R.SP), cpu.GetR(r));
+                }),
+                new Instruction(8, "pop", 1, (cpu) => {
+                    R r = (R)cpu.Next();
+                    cpu.Inc(R.SP);
+                    cpu.SetR(r, cpu.GetAddress(cpu.GetR(R.SP)));
+                }),
                 new Instruction(12, "inc", 1, (cpu) => {
                     R reg = (R)cpu.Next();
                     cpu.Inc(reg);
@@ -42,7 +51,6 @@ namespace XCPU
                 }),
                 new Instruction(14, "cstr", 1, (cpu) => {
                     while (cpu.Next() != 0) ;
-                    //cpu.Next();
                 }),
                 new Instruction(15, "test", 2, (cpu) => {
                     R r1 = (R)cpu.Next();
@@ -66,6 +74,20 @@ namespace XCPU
                 new Instruction(18, "jnz", 1, (cpu) => {
                     int address = cpu.Next();
                     if (!cpu.GetFlag(F.Zero))
+                    {
+                        cpu.SetR(R.XP, address);
+                    }
+                }),
+                new Instruction(19, "je", 1, (cpu) => {
+                    int address = cpu.Next();
+                    if (cpu.GetFlag(F.Equal))
+                    {
+                        cpu.SetR(R.XP, address);
+                    }
+                }),
+                new Instruction(20, "jne", 1, (cpu) => {
+                    int address = cpu.Next();
+                    if (!cpu.GetFlag(F.Equal))
                     {
                         cpu.SetR(R.XP, address);
                     }
