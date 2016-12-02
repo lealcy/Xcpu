@@ -16,13 +16,33 @@ namespace XCPU
 
         int[] memory = new int[MemorySize];
         BitArray flags = new BitArray(32);
-        int[] regs = new int[32];
+
+        // Set up registers
+        int[] r = new int[32];
+
+        // General purpose registers.
+        public int R0 { get { return r[0]; } set { r[0] = value; } }
+        public int R1 { get { return r[1]; } set { r[1] = value; } }
+        public int R2 { get { return r[2]; } set { r[2] = value; } }
+        public int R3 { get { return r[3]; } set { r[3] = value; } }
+        public int R4 { get { return r[4]; } set { r[4] = value; } }
+        public int R5 { get { return r[5]; } set { r[5] = value; } }
+        public int R6 { get { return r[6]; } set { r[6] = value; } }
+        public int R7 { get { return r[7]; } set { r[7] = value; } }
+
+        public int XP { get { return r[15]; } set { r[15] = value; } } // eXecution Pointer - Current memory address read by the CPU.
+        public int IP { get { return r[16]; } set { r[16] = value; } } // Instruction Pointer - Current instruction memory address been executed by the CPU.
+        public int SP { get { return r[17]; } set { r[17] = value; } } // Stack Pointer
+        public int RP { get { return r[25]; } set { r[25] = value; } } // Return Pointer for calls
+        public int EIP { get { return r[28]; } set { r[28] = value; } } // Exception Instruction pointer - Memory address of the Instruction been executed when the exception raise.*/
+        public int EXP { get { return r[29]; } set { r[29] = value; } } // Exception eXecution pointer - Memory address to jump in case of exception.
 
         public void Run()
         {
-            SetR(R.XP, 0);
-            SetR(R.IP, 0);
-            SetR(R.SP, MemorySize - 1);
+            XP = 0;
+            IP = 0;
+            SP = MemorySize - 1;
+            RP = 0;
             Continue();
         }
 
@@ -30,18 +50,14 @@ namespace XCPU
         {
             while (GetFlag(F.Halt) == false)
             {
-                Move(R.IP, R.XP);
+                IP = XP;
                 try
                 {
                     InstructionSet.Get(Next()).Execute(this);
                 }
                 catch (ArgumentOutOfRangeException e)
                 {
-                    Console.WriteLine("[XP: {0,5:D5}, IP: {1,5:D5}: {2}", GetR(R.XP), GetR(R.IP), e.Message);
-                }
-                if (GetFlag(F.Interrupt))
-                {
-                    Interrupt();
+                    Console.WriteLine(e.Message);
                 }
             }
             SetFlag(F.Halt, false);
@@ -52,24 +68,23 @@ namespace XCPU
             source.CopyTo(memory, startAddress);
         }
 
-        public void Interrupt()
+        public void Interrupt(int value)
         {
-            switch(GetR(R.R1)) {
+            switch(value) {
                 case 10: // Print integer
-                    Console.Write(GetR(R.R2));
+                    Console.Write(R1);
                     break;
                 case 11: // Print char
-                    Console.Write((char)GetR(R.R2));
+                    Console.Write((char)R1);
                     break;
                 case 12: // Print chars from memory until found '0'
                     char ch;
-                    Inc(R.R2); // Jump the 'cstr' opcode.
-                    while ((ch = (char)GetAddress(Inc(R.R2))) != 0) {
+                    R1++; ; // Jump the 'cstr' opcode.
+                    while ((ch = (char)GetAddress(R1++)) != 0) {
                         Console.Write(ch);
                     }
                     break;
             }
-            SetFlag(F.Interrupt, false);
         }
 
         public int[] Read(int start, int end)
@@ -77,34 +92,29 @@ namespace XCPU
             return memory.Skip(start).Take(end - start).ToArray();
         }
 
-        public void PrintState()
+        public int GetR(int reg)
         {
-            Console.WriteLine("[XP: {0,5:D5}, IP: {1,5:D5}]", GetR(R.XP), GetR(R.IP));
+            return r[reg];
         }
 
-        public int GetR(R r)
+        public void SetR(int reg, int value)
         {
-            return regs[(int)r];
+            r[reg] = value;
         }
 
-        public void SetR(R r, int value)
-        {
-            regs[(int)r] = value;
-        }
-
-        public void Move(R rd, R rs)
+        public void Move(int rd, int rs)
         {
             SetR(rd, GetR(rs));
         }
 
-        public int Inc(R r)
+        public int Inc(int reg)
         {
-            return regs[(int)r]++;
+            return r[reg]++;
         }
 
-        public int Dec(R r)
+        public int Dec(int reg)
         {
-            return regs[(int)r]--;
+            return r[reg]--;
         }
 
         public void SetFlag(F f, bool value)
@@ -139,23 +149,23 @@ namespace XCPU
 
         public int Next()
         {
-            if (GetR(R.XP) >= MemorySize)
+            if (XP >= MemorySize)
             {
                 SetFlag(F.InvalidAddress, true);
                 RaiseException();
             }
-            return memory[Inc(R.XP)];
+            return memory[XP++];
         }
 
         public void RaiseException()
         {
-            Move(R.EIP, R.IP);
-            Move(R.XP, R.EXP);
+            EIP = IP;
+            XP = EXP;
         }
 
         public void Resume()
         {
-            Move(R.XP, R.EIP);
+            XP = EIP;
         }
     }
 
@@ -170,16 +180,5 @@ namespace XCPU
         Less = 5,
         Interrupt = 6,
         InvalidAddress = 7,
-    }
-
-    // Registers
-    enum R
-    {
-        R0 = 0, R1 = 1, R2 = 2, R3 = 3, R4 = 4, R5 = 5, R6 = 6, R7 = 7, R8 = 8, R9 = 9, // General purpose registers.
-        XP = 16, // eXecution Pointer - Current memory address read by the CPU.
-        IP = 17, // Instruction Pointer - Current instruction memory address been executed by the CPU.
-        SP = 18, // Stack Pointer
-        EXP = 29, // Exception eXecution pointer - Memory address to jump in case of exception.
-        EIP = 30, // Exception Instruction pointer - Memory address of the Instruction been executed when the exception raise.
     }
 }

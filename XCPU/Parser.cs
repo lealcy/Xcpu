@@ -9,6 +9,7 @@ namespace XCPU
     class Parser
     {
         static Dictionary<string, int> labels = new Dictionary<string, int>();
+        static Dictionary<string, int> regIds = new Dictionary<string, int>();
 
         public static int[] Parse(string program)
         {
@@ -16,6 +17,22 @@ namespace XCPU
             var lines = program.Split('\n');
             int xp = 0;
             int lineNumber;
+
+            // Registers positions in registry memory
+            regIds["r0"] = 0;
+            regIds["r1"] = 1;
+            regIds["r2"] = 2;
+            regIds["r3"] = 3;
+            regIds["r4"] = 4;
+            regIds["r5"] = 5;
+            regIds["r6"] = 6;
+            regIds["r7"] = 7;
+            regIds["xp"] = 15;
+            regIds["ip"] = 16;
+            regIds["sp"] = 17;
+            regIds["rp"] = 25;
+            regIds["exp"] = 28;
+            regIds["eip"] = 29;
 
             // Search for labels
             for (lineNumber = 0; lineNumber < lines.Length; lineNumber++)
@@ -49,6 +66,11 @@ namespace XCPU
                 }
             }
 
+            foreach(var kp in labels)
+            {
+                Console.WriteLine(string.Format("{0} = {1}", kp.Key, kp.Value));
+            }
+
             for (lineNumber = 0; lineNumber < lines.Length; lineNumber++)
             {
                 string line = lines[lineNumber].Trim();
@@ -68,60 +90,94 @@ namespace XCPU
                 string command = line.Split(' ')[0].ToLower();
                 Instruction instr = InstructionSet.GetInstructionByName(command);
                 code.Add(instr.Opcode);
-                if (instr.NumOperands == 0)
+                line = line.Substring(command.Length).Trim();
+                if (line.Length == 0)
                 {
-                    continue;
+                    if (instr.NumOperands == 0)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        throw new FormatException(string.Format("Line {0}: Invalid number of operands for {1}; expected {2}, received zero.", lineNumber + 1, command, instr.NumOperands));
+                    }
                 }
-                if (command.Length == line.Length)
+                else if (instr.NumOperands == 0)
                 {
-                    throw new FormatException(string.Format("Line {0}: Invalid number of operands for {1}; expected {2}, received zero.", lineNumber, command, instr.NumOperands));
+                    throw new FormatException(string.Format("Line {0}: Instruction {1} receives no operands.", lineNumber + 1, command));
                 }
+
                 if (instr.Name == "cstr")
                 {
-                    string operand = line.Substring(command.Length).Trim();
-                    if (!operand.StartsWith("\"") || !operand.EndsWith("\""))
+                    if (!line.StartsWith("\"") || !line.EndsWith("\""))
                     {
-                        throw new FormatException(string.Format("Line {0}: Invalid operand format; expected C string, received '{1}'.", lineNumber, operand));
+                        throw new FormatException(string.Format("Line {0}: Invalid operand format; expected C string, received '{1}'.", lineNumber + 1, line));
                     }
-                    foreach (int c in operand.Trim('"'))
+                    foreach (int c in line.Trim('"'))
                     {
                         code.Add(c);
                     }
                     code.Add(0);
                     continue;
                 }
-                string[] operands = line.Substring(command.Length + 1).Split(',');
+                string[] operands = line.Split(',');
                 if (operands.Length != instr.NumOperands)
                 {
-                    throw new FormatException(string.Format("Line {0}: Invalid number of operands for {1}; expected {2}, received {3}", line, command, instr.NumOperands, operands.Length));
+                    throw new FormatException(string.Format("Line {0}: Invalid number of operands for {1}; expected {2}, received {3}", lineNumber + 1, command, instr.NumOperands, operands.Length));
                 }
-                foreach (string operand in operands)
+                for (int oi = 0; oi < instr.NumOperands; oi++)
                 {
-                    string oper = operand.Trim();
+                    string oper = operands[oi].Trim();
                     if (oper.Length == 0)
                     {
-                        throw new ArgumentException(string.Format("Line {0}: Empty operand for {1}", lineNumber, command));
+                        throw new ArgumentException(string.Format("Line {0}: Empty operand for {1}", lineNumber + 1, command));
                     }
-                    int value;
-                    if (int.TryParse(oper, out value))
+                    switch(instr.Format[oi])
                     {
-                        code.Add(value);
-                    }
-                    else if (oper[0] == '\'')
-                    {
-                        if (oper.Length != 2)
-                        {
-                            throw new ArgumentException(string.Format("Line {0}: Invalid char to int conversion for operand {1}", lineNumber, oper));
-                        }
-                        code.Add(oper[1]);
-                    }
-                    else if (labels.ContainsKey(oper))
-                    {
-                        code.Add(labels[oper]);
-                    }
-                    else
-                    {
-                        throw new ArgumentException(string.Format("Line {0}: Invalid argument for {1}", lineNumber, command));
+                        case 'a':
+                            if (oper[0] == '.')
+                            {
+                                if (labels.ContainsKey(oper))
+                                {
+                                    code.Add(labels[oper]);
+                                }
+                                else
+                                {
+                                    throw new KeyNotFoundException(string.Format("Line {0}: Undefined label '{1}'.", lineNumber + 1, oper));
+                                }
+                            }
+                            else
+                            {
+                                code.Add(int.Parse(oper));
+                            }
+                            break;
+                        case 'i':
+                            if (oper[0] == '\'')
+                            {
+                                if (oper.Length != 2)
+                                {
+                                    throw new ArgumentException(string.Format("Line {0}: Invalid char to int conversion for operand {1}.", lineNumber + 1, oi + 1));
+                                }
+                                code.Add(oper[1]);
+                            }
+                            else
+                            {
+                                code.Add(int.Parse(oper));
+                            }
+                            break;
+                        case 'r':
+                            string regId = oper.ToLower();
+                            if (regIds.ContainsKey(regId))
+                            {
+                                code.Add(regIds[oper.ToLower()]);
+                            }
+                            else
+                            {
+                                throw new KeyNotFoundException(string.Format("Line {0}: Invalid register name.", lineNumber + 1));
+                            }
+                            break;
+                        default:
+                            throw new ArgumentException(string.Format("Line {0}: Invalid operand {1}.", lineNumber + 1, oi + 1));
                     }
                 }
             }
@@ -157,5 +213,6 @@ namespace XCPU
 
             return program;
         }
+
     }
 }

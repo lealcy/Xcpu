@@ -20,7 +20,7 @@ namespace XCPU
             Console.WriteLine("CPU integer range is {0} bits.", Xcpu.IntegerRange);
             Console.WriteLine("Installed memory is {0:N0} bytes.", Xcpu.MemorySize);
             while (true) {
-                Console.Write("{0,5:D5}: ", cpu.GetR(R.XP));
+                Console.Write("{0,5:D5}: ", cpu.XP);
                 cmd = Console.ReadLine().Trim();
                 switch (cmd.Split(' ')[0]) {
                     case "h":
@@ -53,9 +53,10 @@ namespace XCPU
                         try
                         {
                             f = new StreamReader(cmd.Split(' ')[1]);
-                        } catch (FileNotFoundException e)
+                        }
+                        catch (Exception e)
                         {
-                            Console.WriteLine(e.Message);
+                            Console.WriteLine("Load:" + e.Message);
                             break;
                         }
                         try
@@ -64,21 +65,22 @@ namespace XCPU
                         }
                         catch (Exception e)
                         {
-                            Console.WriteLine(e.Message);
+                            Console.WriteLine("Parse File: " + e.Message);
                             break;
                         }
                         finally
                         {
                             f.Close();
                         }
-                        cpu.Write(code, cpu.GetR(R.XP));
-                        cpu.SetR(R.XP, cpu.GetR(R.XP) + code.Length);
+                        cpu.Write(code, cpu.XP);
+                        cpu.XP += code.Length;
                         break;
+                    case "q":
                     case "x":
                         return;
                     case "r":
                         cpu.Run();
-                        cpu.Dec(R.XP);
+                        cpu.XP--;
                         break;
                     case "j":
                         if (cmd.Length < 3)
@@ -92,10 +94,9 @@ namespace XCPU
                             Console.WriteLine("Expected memory address.");
                             break;
                         }
-                        cpu.SetR(R.XP, address);
+                        cpu.XP = address;
                         break;
                     case "s":
-                        cpu.PrintState();
                         break;
                     default:
                         try
@@ -107,8 +108,8 @@ namespace XCPU
                             Console.WriteLine(e.Message);
                             break;
                         }
-                        cpu.Write(code, cpu.GetR(R.XP));
-                        cpu.SetR(R.XP, cpu.GetR(R.XP) + code.Length);
+                        cpu.Write(code, cpu.XP);
+                        cpu.XP += code.Length;
                     break;
                 }
             }
